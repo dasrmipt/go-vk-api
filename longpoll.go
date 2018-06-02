@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-resty/resty"
 	"strconv"
+	"fmt"
 )
 
 const (
@@ -91,6 +92,9 @@ func (lp *longPoll) process() {
 
 	if err != nil {
 		lp.client.Log("[Error] longPoll::process:", err.Error(), "WebResponse:", string(resp.Body()))
+		if resp.StatusCode() == 504 {
+			lp.process()
+		}
 		return
 	}
 
@@ -156,4 +160,17 @@ func (lp *longPoll) processEvents() {
 			}
 		}
 	}
+}
+
+func (msg *LPMessage) GetAuthor() int64 {
+	if msg.FromID < 2000000000 && msg.FromID > 0 {
+		return msg.FromID
+	}
+	value, err := strconv.Atoi(msg.Attachments["from"])
+	if err != nil {
+		fmt.Print(err.Error())
+		return 0
+	}
+
+	return int64(value)
 }
